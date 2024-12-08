@@ -8,6 +8,27 @@ import (
 	"strings"
 )
 
+type BuiltinCommands struct {
+	Exit, Echo, Type string
+}
+
+func (b *BuiltinCommands) IsValid(cmd string) bool {
+	return cmd == b.Exit || cmd == b.Echo || cmd == b.Type
+}
+
+var Builtins = &BuiltinCommands{
+	Exit: "exit",
+	Echo: "echo",
+	Type: "type",
+}
+
+func CommandNotFound(cmd string) string {
+	return fmt.Sprintf("%s: command not found", cmd)
+}
+
+// @TODO: Make type command work exactly as actual shell
+// func EvalCommand(cmd string) string {}
+
 func main() {
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
@@ -23,12 +44,18 @@ func main() {
 		var retmsg string
 
 		switch fullCommand[0] {
-		case "exit":
+		case Builtins.Exit:
 			os.Exit(0)
-		case "echo":
+		case Builtins.Echo:
 			retmsg = strings.Join(fullCommand[1:], " ")
+		case Builtins.Type:
+			if Builtins.IsValid(fullCommand[1]) {
+				retmsg = fmt.Sprintf("%s is a shell builtin", fullCommand[1])
+			} else {
+				retmsg = CommandNotFound(fullCommand[1])
+			}
 		default:
-			retmsg = fmt.Sprintf("%s: command not found", fullCommand[0])
+			retmsg = CommandNotFound(fullCommand[0])
 		}
 
 		fmt.Fprint(os.Stdout, retmsg+"\n")
