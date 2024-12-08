@@ -52,7 +52,7 @@ func main() {
 			if Builtins.IsValid(fullCommand[1]) {
 				retmsg = fmt.Sprintf("%s is a shell builtin", fullCommand[1])
 			} else {
-				retmsg = CommandNotFound(fullCommand[1])
+				retmsg = fmt.Sprintf("%s: not found", fullCommand[1])
 			}
 		default:
 			retmsg = CommandNotFound(fullCommand[0])
