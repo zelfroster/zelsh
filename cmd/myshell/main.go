@@ -10,7 +10,6 @@ import (
 
 func main() {
 	for {
-		// Uncomment this block to pass the first stage
 		fmt.Fprint(os.Stdout, "$ ")
 
 		// Wait for user input
@@ -21,15 +20,17 @@ func main() {
 
 		fullCommand := strings.Split(input[:len(input)-1], " ")
 
-		if fullCommand[0] == "exit" {
-			if len(fullCommand) > 1 && fullCommand[1] == "0" {
-				os.Exit(0)
-			} else {
-				os.Exit(1)
-			}
+		var retmsg string
+
+		switch fullCommand[0] {
+		case "exit":
+			os.Exit(0)
+		case "echo":
+			retmsg = strings.Join(fullCommand[1:], " ")
+		default:
+			retmsg = fmt.Sprintf("%s: command not found", fullCommand[0])
 		}
 
-		retmsg := fmt.Sprintf("%s: command not found\n", fullCommand[0])
-		fmt.Fprint(os.Stdout, retmsg)
+		fmt.Fprint(os.Stdout, retmsg+"\n")
 	}
 }
