@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -13,12 +14,22 @@ func main() {
 		fmt.Fprint(os.Stdout, "$ ")
 
 		// Wait for user input
-		str, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		input, err := bufio.NewReader(os.Stdin).ReadString('\n')
 		if err != nil {
 			log.Fatalln(err)
 		}
 
-		retmsg := fmt.Sprintf("%s: command not found\n", str[:len(str)-1])
+		fullCommand := strings.Split(input[:len(input)-1], " ")
+
+		if fullCommand[0] == "exit" {
+			if len(fullCommand) > 1 && fullCommand[1] == "0" {
+				os.Exit(0)
+			} else {
+				os.Exit(1)
+			}
+		}
+
+		retmsg := fmt.Sprintf("%s: command not found\n", fullCommand[0])
 		fmt.Fprint(os.Stdout, retmsg)
 	}
 }
