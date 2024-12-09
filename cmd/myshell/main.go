@@ -71,7 +71,7 @@ func main() {
 			} else {
 				exists, path := checkIfFileInPaths(fullCommand[1])
 				if exists {
-					retmsg = fmt.Sprintf("%s is %s", fullCommand[1], path)
+					retmsg = fmt.Sprintf("%s is %s/%s", fullCommand[1], path, fullCommand[1])
 				} else {
 					retmsg = fmt.Sprintf("%s: not found", fullCommand[1])
 				}
@@ -84,7 +84,7 @@ func main() {
 				if err != nil {
 					log.Fatalln(err)
 				}
-				retmsg = string(stdout)
+				retmsg = strings.Trim(string(stdout), "\r\n")
 			} else {
 				retmsg = fmt.Sprintf("%s: command not found", fullCommand[0])
 			}
