@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -23,12 +24,27 @@ var Builtins = &BuiltinCommands{
 	Type: "type",
 }
 
-func CommandNotFound(cmd string) string {
-	return fmt.Sprintf("%s: command not found", cmd)
-}
-
 // @TODO: Make type command work exactly as actual shell
 // func EvalCommand(cmd string) string {}
+
+func checkIfFileInPaths(fp string) (bool, string) {
+	paths := strings.Split(os.Getenv("PATH"), ":")
+	for _, path := range paths {
+		filePath := filepath.Join(path, fp)
+		if _, err := os.Stat(filePath); err == nil {
+			return true, path
+		}
+	}
+	return false, ""
+
+	// ------------------ EASIER IMPLEMENTATION ------------------
+	// if path, err := exec.LookPath(fullCommand[1]); err != nil {
+	// 	retmsg = fmt.Sprintf("%s: not found", fullCommand[1])
+	// } else {
+	// 	retmsg = fmt.Sprintf("%s is %s", fullCommand[1], path)
+	// }
+	// -----------------------------------------------------------
+}
 
 func main() {
 	for {
@@ -53,14 +69,25 @@ func main() {
 			if Builtins.IsValid(fullCommand[1]) {
 				retmsg = fmt.Sprintf("%s is a shell builtin", fullCommand[1])
 			} else {
-				if path, err := exec.LookPath(fullCommand[1]); err != nil {
-					retmsg = fmt.Sprintf("%s: not found", fullCommand[1])
-				} else {
+				exists, path := checkIfFileInPaths(fullCommand[1])
+				if exists {
 					retmsg = fmt.Sprintf("%s is %s", fullCommand[1], path)
+				} else {
+					retmsg = fmt.Sprintf("%s: not found", fullCommand[1])
 				}
 			}
 		default:
-			retmsg = CommandNotFound(fullCommand[0])
+			// Execute command if found in provided PATH else print not found
+			if exists, _ := checkIfFileInPaths(fullCommand[0]); exists {
+				shellCmd := exec.Command(fullCommand[0], fullCommand[1:]...)
+				stdout, err := shellCmd.Output()
+				if err != nil {
+					log.Fatalln(err)
+				}
+				retmsg = string(stdout)
+			} else {
+				retmsg = fmt.Sprintf("%s: command not found", fullCommand[0])
+			}
 		}
 
 		fmt.Fprint(os.Stdout, retmsg+"\n")
