@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -52,7 +53,11 @@ func main() {
 			if Builtins.IsValid(fullCommand[1]) {
 				retmsg = fmt.Sprintf("%s is a shell builtin", fullCommand[1])
 			} else {
-				retmsg = fmt.Sprintf("%s: not found", fullCommand[1])
+				if path, err := exec.LookPath(fullCommand[1]); err != nil {
+					retmsg = fmt.Sprintf("%s: not found", fullCommand[1])
+				} else {
+					retmsg = fmt.Sprintf("%s is %s", fullCommand[1], path)
+				}
 			}
 		default:
 			retmsg = CommandNotFound(fullCommand[0])
