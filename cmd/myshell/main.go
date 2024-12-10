@@ -11,17 +11,18 @@ import (
 )
 
 type BuiltinCommands struct {
-	Exit, Echo, Type string
+	Exit, Echo, Type, Pwd string
 }
 
 func (b *BuiltinCommands) IsValid(cmd string) bool {
-	return cmd == b.Exit || cmd == b.Echo || cmd == b.Type
+	return cmd == b.Exit || cmd == b.Echo || cmd == b.Type || cmd == b.Pwd
 }
 
 var Builtins = &BuiltinCommands{
 	Exit: "exit",
 	Echo: "echo",
 	Type: "type",
+	Pwd:  "pwd",
 }
 
 // @TODO: Make type command work exactly as actual shell
@@ -76,6 +77,8 @@ func main() {
 					retmsg = fmt.Sprintf("%s: not found", fullCommand[1])
 				}
 			}
+		case Builtins.Pwd:
+			retmsg = fmt.Sprintf("%s", os.Getenv("PWD"))
 		default:
 			// Execute command if found in provided PATH else print not found
 			if exists, _ := checkIfFileInPaths(fullCommand[0]); exists {
