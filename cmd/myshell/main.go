@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -11,11 +12,11 @@ import (
 )
 
 type BuiltinCommands struct {
-	Exit, Echo, Type, Pwd string
+	Exit, Echo, Type, Pwd, Cd string
 }
 
 func (b *BuiltinCommands) IsValid(cmd string) bool {
-	return cmd == b.Exit || cmd == b.Echo || cmd == b.Type || cmd == b.Pwd
+	return cmd == b.Exit || cmd == b.Echo || cmd == b.Type || cmd == b.Pwd || cmd == b.Cd
 }
 
 var Builtins = &BuiltinCommands{
@@ -23,6 +24,7 @@ var Builtins = &BuiltinCommands{
 	Echo: "echo",
 	Type: "type",
 	Pwd:  "pwd",
+	Cd:   "cd",
 }
 
 // @TODO: Make type command work exactly as actual shell
@@ -78,7 +80,27 @@ func main() {
 				}
 			}
 		case Builtins.Pwd:
-			retmsg = fmt.Sprintf("%s", os.Getenv("PWD"))
+			pwd, err := os.Getwd()
+			if err != nil {
+				log.Fatalln(err)
+			}
+			retmsg = fmt.Sprintf("%s", pwd)
+		case Builtins.Cd:
+			path := fullCommand[1]
+			if path == "~" {
+				path = os.Getenv("HOME")
+			}
+			err := os.Chdir(path)
+			if err != nil {
+				var pathError *os.PathError
+				if errors.As(err, &pathError) {
+					retmsg = fmt.Sprintf("cd: %s: No such file or directory", path)
+				} else {
+					log.Fatalln(err)
+				}
+			} else {
+				continue
+			}
 		default:
 			// Execute command if found in provided PATH else print not found
 			if exists, _ := checkIfFileInPaths(fullCommand[0]); exists {
