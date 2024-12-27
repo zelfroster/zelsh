@@ -27,7 +27,7 @@ var Builtins = &BuiltinCommands{
 	Cd:   "cd",
 }
 
-// @TODO: Make type command work exactly as actual shell
+//  TODO: Make type command work exactly as actual shell
 // func EvalCommand(cmd string) string {}
 
 func checkIfFileInPaths(fp string) (bool, string) {
@@ -49,6 +49,36 @@ func checkIfFileInPaths(fp string) (bool, string) {
 	// -----------------------------------------------------------
 }
 
+func parseInput(inputString string) []string {
+	var fullCommand []string
+	current := ""
+	inQuotes := false
+	for i := 0; i < len(inputString); i++ {
+		char := inputString[i]
+
+		if char == '\'' {
+			inQuotes = !inQuotes
+			continue // Skip the quote character itself
+		}
+
+		if !inQuotes && char == ' ' {
+			if current != "" {
+				fullCommand = append(fullCommand, current)
+				current = ""
+			}
+		} else {
+			current += string(char)
+		}
+	}
+
+	// Don't forget the last part
+	if current != "" {
+		fullCommand = append(fullCommand, current)
+	}
+
+	return fullCommand
+}
+
 func main() {
 	for {
 		fmt.Fprint(os.Stdout, "$ ")
@@ -59,7 +89,7 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		fullCommand := strings.Split(input[:len(input)-1], " ")
+		fullCommand := parseInput(input[:len(input)-1])
 
 		var retmsg string
 
