@@ -76,6 +76,25 @@ func parseInput(inputString string) []string {
 				current += string(char)
 			}
 		} else {
+			if !inQuotes && !inDoubleQuotes && char == '\\' {
+				if i != len(inputString)-1 {
+					switch inputString[i+1] {
+					case ' ':
+						current += string(inputString[i+1])
+						i++
+						break
+					case '\'':
+						current += string(inputString[i+1])
+						i++
+						break
+					case '"':
+						current += string(inputString[i+1])
+						i++
+						break
+					}
+					continue
+				}
+			}
 			current += string(char)
 		}
 	}
