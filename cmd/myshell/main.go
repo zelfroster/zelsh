@@ -55,47 +55,56 @@ func parseInput(inputString string) []string {
 	current := ""
 	inQuotes := false
 	inDoubleQuotes := false
+	backslash := false
 	for i := 0; i < len(inputString); i++ {
 		char := inputString[i]
 
-		if char == '\'' && !inDoubleQuotes {
-			inQuotes = !inQuotes
-			continue
-		}
+		switch char {
+		case '\'':
+			if backslash && inDoubleQuotes {
+				current += string('\\')
+			}
+			if backslash || inDoubleQuotes {
+				current += string(char)
+			} else {
+				inQuotes = !inQuotes
+			}
+			backslash = false
 
-		if char == '"' && !inQuotes {
-			inDoubleQuotes = !inDoubleQuotes
-			continue
-		}
+		case '"':
+			if backslash || inQuotes {
+				current += string(char)
+			} else {
+				inDoubleQuotes = !inDoubleQuotes
+			}
+			backslash = false
 
-		if char == ' ' {
-			if !inQuotes && !inDoubleQuotes && current != "" {
+		case '\\':
+			if backslash || inQuotes {
+				current += string(char)
+				backslash = false
+			} else {
+				backslash = true
+			}
+
+		case ' ':
+			if backslash && inDoubleQuotes {
+				current += string('\\')
+			}
+			if backslash || inQuotes || inDoubleQuotes {
+				current += string(char)
+			} else if current != "" {
 				fullCommand = append(fullCommand, current)
 				current = ""
-			} else if inQuotes || inDoubleQuotes {
-				current += string(char)
 			}
-		} else {
-			if !inQuotes && !inDoubleQuotes && char == '\\' {
-				if i != len(inputString)-1 {
-					switch inputString[i+1] {
-					case ' ':
-						current += string(inputString[i+1])
-						i++
-						break
-					case '\'':
-						current += string(inputString[i+1])
-						i++
-						break
-					case '"':
-						current += string(inputString[i+1])
-						i++
-						break
-					}
-					continue
-				}
+			backslash = false
+
+		default:
+			if backslash && inDoubleQuotes {
+				current += string('\\')
 			}
 			current += string(char)
+			backslash = false
 		}
 	}
 
@@ -162,6 +171,7 @@ func main() {
 			// Execute command if found in provided PATH else print not found
 			if exists, _ := checkIfFileInPaths(fullCommand[0]); exists {
 				shellCmd := exec.Command(fullCommand[0], fullCommand[1:]...)
+				// fmt.Println(shellCmd.String())
 				stdout, err := shellCmd.Output()
 				if err != nil {
 					log.Fatalln(err)
