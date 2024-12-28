@@ -49,29 +49,37 @@ func checkIfFileInPaths(fp string) (bool, string) {
 	// -----------------------------------------------------------
 }
 
+// TODO: Test if nested quotes work exactly as in zsh/bash
 func parseInput(inputString string) []string {
 	var fullCommand []string
 	current := ""
 	inQuotes := false
+	inDoubleQuotes := false
 	for i := 0; i < len(inputString); i++ {
 		char := inputString[i]
 
-		if char == '\'' {
+		if char == '\'' && !inDoubleQuotes {
 			inQuotes = !inQuotes
-			continue // Skip the quote character itself
+			continue
 		}
 
-		if !inQuotes && char == ' ' {
-			if current != "" {
+		if char == '"' && !inQuotes {
+			inDoubleQuotes = !inDoubleQuotes
+			continue
+		}
+
+		if char == ' ' {
+			if !inQuotes && !inDoubleQuotes && current != "" {
 				fullCommand = append(fullCommand, current)
 				current = ""
+			} else if inQuotes || inDoubleQuotes {
+				current += string(char)
 			}
 		} else {
 			current += string(char)
 		}
 	}
 
-	// Don't forget the last part
 	if current != "" {
 		fullCommand = append(fullCommand, current)
 	}
