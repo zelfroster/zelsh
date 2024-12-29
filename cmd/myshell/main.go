@@ -133,7 +133,7 @@ func main() {
 		var remArgs []string
 
 		for i, val := range args {
-			if val == ">" || val == "1>" || val == "2>" {
+			if val == ">" || val == "1>" || val == "2>" || val == ">>" || val == "1>>" || val == "2>>" {
 				redirectOperatorIndex = i
 				operator = val
 				break
@@ -196,7 +196,7 @@ func main() {
 				shellCmd := exec.Command(cmd, arg)
 				stdout, err := shellCmd.Output()
 				if err != nil {
-					if operator == "2>" {
+					if operator == "2>" || operator == "2>>" {
 						errMsg += fmt.Sprintf("%s: %s: No such file or directory\n", cmd, arg)
 					} else {
 						fmt.Fprintf(os.Stdout, "%s: %s: No such file or directory\n", cmd, arg)
@@ -204,7 +204,9 @@ func main() {
 				} else {
 					if operator == ">" || operator == "1>" {
 						retMsg += strings.Trim(string(stdout), "\r\n")
-					} else if operator == "2>" {
+					} else if operator == ">>" || operator == "1>>" {
+						retMsg += fmt.Sprintf("%s\n", strings.Trim(string(stdout), "\r\n"))
+					} else if operator == "2>" || operator == "2>>" {
 						fmt.Fprintf(os.Stdout, "%s\n", strings.Trim(string(stdout), "\r\n"))
 					} else {
 						fmt.Fprintf(os.Stdout, "%s", strings.Trim(string(stdout), "\r\n"))
@@ -248,7 +250,22 @@ func main() {
 				err = os.WriteFile(remArgs[0], []byte(retMsg), 0644)
 			case "2>":
 				err = os.WriteFile(remArgs[0], []byte(errMsg), 0644)
+			case ">>", "1>>":
+				f, err := os.OpenFile(remArgs[0], os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				defer f.Close()
+				_, err = f.WriteString("\n" + retMsg)
+			case "2>>":
+				f, err := os.OpenFile(remArgs[0], os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				defer f.Close()
+				_, err = f.WriteString("\n" + errMsg)
 			}
+
 			if err != nil {
 				log.Fatalln(err)
 			}
