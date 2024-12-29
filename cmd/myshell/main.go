@@ -256,21 +256,29 @@ func main() {
 					log.Fatalln(err)
 				}
 				defer f.Close()
-				_, err = f.WriteString("\n" + retMsg)
+				if retMsg == "" {
+					_, err = f.WriteString(retMsg)
+				} else {
+					_, err = f.WriteString("\n" + retMsg)
+				}
 			case "2>>":
+				_, err := os.Stat(remArgs[0])
+				if err != nil {
+					errMsg = "\n" + errMsg
+				}
 				f, err := os.OpenFile(remArgs[0], os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 				if err != nil {
 					log.Fatalln(err)
 				}
 				defer f.Close()
-				_, err = f.WriteString("\n" + errMsg)
+				_, err = f.WriteString(errMsg)
 			}
 
 			if err != nil {
 				log.Fatalln(err)
 			}
 
-			if cmd == Builtins.Echo && operator == "2>" {
+			if cmd == Builtins.Echo && (operator == "2>" || operator == "2>>") {
 				fmt.Fprint(os.Stdout, retMsg+"\n")
 			}
 
