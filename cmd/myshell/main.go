@@ -133,7 +133,7 @@ func main() {
 		var remArgs []string
 
 		for i, val := range args {
-			if val == ">" || val == "1>" {
+			if val == ">" || val == "1>" || val == "2>" {
 				redirectOperatorIndex = i
 				operator = val
 				break
@@ -146,12 +146,15 @@ func main() {
 		}
 
 		var retMsg string
+		var errMsg string
 
 		switch cmd {
 		case Builtins.Exit:
 			os.Exit(0)
+
 		case Builtins.Echo:
 			retMsg = strings.Join(args, " ")
+
 		case Builtins.Type:
 			if Builtins.IsValid(args[0]) {
 				retMsg = fmt.Sprintf("%s is a shell builtin", args[0])
@@ -163,12 +166,14 @@ func main() {
 					retMsg = fmt.Sprintf("%s: not found", args[0])
 				}
 			}
+
 		case Builtins.Pwd:
 			pwd, err := os.Getwd()
 			if err != nil {
 				log.Fatalln(err)
 			}
 			retMsg = fmt.Sprintf("%s", pwd)
+
 		case Builtins.Cd:
 			path := args[0]
 			if path == "~" {
@@ -185,20 +190,28 @@ func main() {
 			} else {
 				continue
 			}
-		case "cat":
+
+		case "cat", "ls":
 			for _, arg := range args {
 				shellCmd := exec.Command(cmd, arg)
 				stdout, err := shellCmd.Output()
 				if err != nil {
-					fmt.Fprintf(os.Stdout, "cat: %s: No such file or directory\n", arg)
-				} else {
-					if len(operator) == 0 {
-						fmt.Fprintf(os.Stdout, "%s", strings.Trim(string(stdout), "\r\n"))
+					if operator == "2>" {
+						errMsg += fmt.Sprintf("%s: %s: No such file or directory\n", cmd, arg)
 					} else {
+						fmt.Fprintf(os.Stdout, "%s: %s: No such file or directory\n", cmd, arg)
+					}
+				} else {
+					if operator == ">" || operator == "1>" {
 						retMsg += strings.Trim(string(stdout), "\r\n")
+					} else if operator == "2>" {
+						fmt.Fprintf(os.Stdout, "%s\n", strings.Trim(string(stdout), "\r\n"))
+					} else {
+						fmt.Fprintf(os.Stdout, "%s", strings.Trim(string(stdout), "\r\n"))
 					}
 				}
 			}
+
 		default:
 			// Execute command if found in provided PATH else print not found
 			if exists, _ := checkIfFileInPaths(cmd); exists {
@@ -212,32 +225,39 @@ func main() {
 			} else {
 				retMsg = fmt.Sprintf("%s: command not found", cmd)
 			}
+
 		}
 
 		if len(operator) != 0 && len(remArgs) > 0 {
 			if len(remArgs) > 1 {
 				retMsg += " " + strings.Join(remArgs[1:], " ")
 			}
+
 			// for creating path/to/dir/file: we need to check if path/to/dir exists
 			dirArr := strings.Split(remArgs[0], "/")
 			if len(dirArr) > 1 {
 				dir := strings.Join(dirArr[:len(dirArr)-1], "/")
 				if _, err := os.Stat(dir); err != nil {
 					retMsg = fmt.Sprintf("no such file or directory: %s", remArgs[0])
-				} else {
-					err := os.WriteFile(remArgs[0], []byte(retMsg), 0644)
-					if err != nil {
-						retMsg = err.Error()
-					}
-					continue
 				}
-			} else {
-				err := os.WriteFile(remArgs[0], []byte(retMsg), 0644)
-				if err != nil {
-					retMsg = err.Error()
-				}
-				continue
 			}
+
+			var err error
+			switch operator {
+			case ">", "1>":
+				err = os.WriteFile(remArgs[0], []byte(retMsg), 0644)
+			case "2>":
+				err = os.WriteFile(remArgs[0], []byte(errMsg), 0644)
+			}
+			if err != nil {
+				log.Fatalln(err)
+			}
+
+			if cmd == Builtins.Echo && operator == "2>" {
+				fmt.Fprint(os.Stdout, retMsg+"\n")
+			}
+
+			continue
 		}
 
 		fmt.Fprint(os.Stdout, retMsg+"\n")
